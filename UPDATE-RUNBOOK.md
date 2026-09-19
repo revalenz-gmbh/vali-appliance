@@ -13,9 +13,10 @@ In einem beliebigen RSS/Atom-Reader abonnieren.
 ## Einmalig: Schluessel importieren
 
 ```bash
-git clone git@github.com:revalenz-gmbh/vali-appliance.git
+git clone https://github.com/revalenz-gmbh/vali-appliance.git
 cd vali-appliance
 gpg --import KEYS.asc
+gpg --fingerprint technik@revalenz.de
 ```
 Fingerabdruck **vor dem ersten Vertrauen** gegen `SECURITY.md` UND gegen
 die unabhaengige Veroeffentlichung auf revalenz.de vergleichen.
@@ -30,19 +31,44 @@ die unabhaengige Veroeffentlichung auf revalenz.de vergleichen.
    ```bash
    git tag -v <neue-version>   # z.B. v0.1.1
    ```
-   Erwartet: `gpg: Good signature from "revalenz Vali-Appliance
-   Releases <technik@revalenz.de>"`. Steht dort irgendetwas anderes
-   (falsche Identitaet, "BAD signature", kein Ergebnis): **nicht
-   einspielen**, `technik@revalenz.de` kontaktieren.
-3. Aenderungsprotokoll lesen (`CHANGELOG.md` im neuen Tag) -- insbesondere,
-   ob die Aenderung sicherheitsrelevant ist.
+   **Erwartetes Ergebnis:** Die Ausgabe enthaelt eine Zeile mit `Good
+   signature from` UND die Identitaet enthaelt `technik@revalenz.de`.
+   Zusaetzlich ist eine Zeile `gpg: WARNING: This key is not certified
+   with a trusted signature!` NORMAL und NICHT besorgniserregend — das
+   Vertrauen kommt hier nicht aus GPGs Web-of-Trust, sondern aus dem
+   Out-of-Band-Vergleich des Fingerabdrucks gegen `SECURITY.md` und
+   revalenz.de.
+   
+   **Nicht einspielen**, wenn:
+   - Die Ausgabe enthaelt `BAD signature` oder `expired` oder aehnliches
+   - Es gibt keine Signatur-Zeile ueberhaupt
+   - Die Identitaet enthaelt nicht `technik@revalenz.de`
+   
+   In jedem dieser Faelle: **nicht einspielen**, `technik@revalenz.de`
+   kontaktieren.
+3. Aenderungsprotokoll lesen (aus dem neuen Tag, ohne ihn auszuchecken):
+   ```bash
+   git show <neue-version>:CHANGELOG.md
+   ```
+   Insbesondere, ob die Aenderung sicherheitsrelevant ist.
 4. Auf den neuen Stand wechseln:
    ```bash
    git checkout <neue-version>
    ```
-5. Den eigentlichen Anwendungs-Redeploy-Schritt (Firewall neu anwenden,
-   Dienste neu starten) macht ihr wie in
-   [`autarkie/RUNBOOK.md`](autarkie/RUNBOOK.md) beschrieben -- dieses
+5. Wenn sich in diesem Update die Datei `allowlist.conf` geaendert hat
+   (in `CHANGELOG.md` dokumentiert), muss die Firewall-Positivliste neu
+   angewendet werden:
+   ```bash
+   sudo /opt/vali-appliance/autarkie/setup-firewall.sh
+   ```
+   Details dazu finden sich unter "Positivliste aendern" in
+   [`autarkie/RUNBOOK.md`](autarkie/RUNBOOK.md).
+   
+   **Hinweis:** Dieses Repo enthaelt derzeit nur die Autarkie-Nachweis-
+   Komponente. Falls sich spaeter weitere Komponenten (z.B. die
+   eigentliche Vali-Anwendung) hinzugesellen, werden ihre
+   Redeploy-Schritte hier oder in separaten Dokumenten beschrieben --
+   zum jetzigen Zeitpunkt sind keine weiteren Aktionen noetig. Dieses
    Dokument regelt nur das *Holen und Verifizieren* eines Updates, nicht
    den Betrieb der einzelnen Komponenten.
 

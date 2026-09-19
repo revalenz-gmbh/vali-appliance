@@ -19,15 +19,41 @@ unabhaengige Quelle -- ein kompromittiertes GitHub-Konto allein soll keine
 unbemerkt falsch signierten Releases durchsetzen koennen). **Vergleiche
 beide Quellen, wenn du diesem Repo zum ersten Mal vertraust.**
 
-## Schluessel importieren
+## Schluessel importieren und Signatur verifizieren
+
+Jedes Release ist ein signierter Git-Tag. Der Schluessel muss einmalig
+importiert und seine Identitaet verifiziert werden:
 
 ```bash
 gpg --import KEYS.asc
+gpg --fingerprint technik@revalenz.de
 ```
+
+Vergleiche den angezeigten Fingerabdruck gegen den oben dokumentierten
+Wert, sowie gegen die unabhaengige Veroeffentlichung auf
+[revalenz.de](https://revalenz.de).
+
+Um bei jedem Update die Signatur zu pruefen:
+
+```bash
+git tag -v <tag>   # z.B. git tag -v v0.1.0
+```
+
+**Erwartetes Ergebnis:** Die Ausgabe enthaelt eine Zeile mit `Good
+signature from` UND die Identitaet enthaelt `technik@revalenz.de`. Eine
+Zeile `gpg: WARNING: This key is not certified with a trusted signature!`
+ist NORMAL — das Vertrauen kommt hier aus dem Out-of-Band-Vergleich des
+Fingerabdrucks, nicht aus GPGs eigenem Web-of-Trust.
 
 ## Was zu tun ist, wenn eine Signatur nicht passt
 
 Ein Release, dessen Tag-Signatur nicht gegen diesen Fingerabdruck prueft,
 NIEMALS einspielen -- unabhaengig davon, wie dringend das Update wirkt.
-Bei Zweifeln: technik@revalenz.de kontaktieren, bevor irgendetwas
-eingespielt wird.
+
+Nicht einspielen, wenn:
+- Die Ausgabe enthaelt `BAD signature` oder `expired` oder aehnliches
+- Es gibt keine Signatur-Zeile ueberhaupt
+- Die Identitaet enthaelt nicht `technik@revalenz.de`
+
+Bei Zweifeln oder ungueltig wirkenden Signaturen: technik@revalenz.de
+kontaktieren, bevor irgendetwas eingespielt wird.
