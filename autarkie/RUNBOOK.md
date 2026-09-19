@@ -134,7 +134,10 @@ Nur `allowlist.conf` anfassen, dann die Firewall neu anwenden:
 > ausgehende Positivliste. Wer zusaetzliche eingehende Regeln auf dieser
 > Appliance braucht, muss sie nach JEDEM Lauf von `setup-firewall.sh`
 > erneut anwenden — oder den eingehenden Teil des Skripts zuerst
-> erweitern.
+> erweitern. Zur Einordnung: die von `setup-firewall.sh` gesetzte
+> SSH-Regel oeffnet Port 22 eingehend fuer JEDE Quelle (keine
+> IP-Einschraenkung) — das ist bei einem sicherheitsbewussten Betrieb
+> eine bewusste Erwaehnung wert.
 
 ```bash
 sudo /opt/vali-appliance/autarkie/setup-firewall.sh
