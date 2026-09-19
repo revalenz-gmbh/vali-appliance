@@ -54,14 +54,21 @@ in `SECURITY.md` hinterlegten Wert vergleichen.
    weiterholen.
 2. Signatur des neuen Tags pruefen -- **NIEMALS ueberspringen**. Der
    Abgleich gegen den Fingerabdruck ist das eigentliche Pass/Fail-
-   Kriterium, nicht das bloße Lesen von Text in der Ausgabe:
+   Kriterium, nicht das blosse Lesen von Text in der Ausgabe:
    ```bash
-   git verify-tag --raw <neue-version> 2>&1 | grep -q \
-     'VALIDSIG 5F6E6D907617F8991135D1847B1C6E1640801E3F'   # z.B. v0.1.1
+   # <neue-version> z.B. v0.1.1
+   GPG_STATUS=$(git verify-tag --raw <neue-version> 2>&1) && \
+     printf '%s\n' "$GPG_STATUS" | grep -q \
+       '^\[GNUPG:\] VALIDSIG 5F6E6D907617F8991135D1847B1C6E1640801E3F '
    ```
-   **Erwartetes Ergebnis:** Exit-Code `0` von diesem `grep -q` -- die
-   Zeile `VALIDSIG` mit genau diesem Fingerabdruck ist in der Ausgabe
-   vorhanden.
+   **Erwartetes Ergebnis:** Exit-Code `0` von diesem Befehl -- `git
+   verify-tag` selbst ist erfolgreich durchgelaufen UND die Statuszeile
+   `VALIDSIG` beginnt exakt mit diesem Fingerabdruck. Beides zaehlt: ein
+   unverankertes `grep` auf `VALIDSIG <fingerabdruck>` liesse sich mit
+   einem praeparierten Schluessel austricksen, und ohne den eigenen
+   Exit-Code von `git verify-tag` mitzupruefen wuerde ein mit einem
+   **zurueckgezogenen** Schluessel signierter Tag faelschlich als gueltig
+   durchgehen.
 
    Zur menschlichen Gegenkontrolle kann zusaetzlich `git tag -v
    <neue-version>` angeschaut werden: die Ausgabe sollte eine Zeile mit
@@ -77,11 +84,12 @@ in `SECURITY.md` hinterlegten Wert vergleichen.
    Fingerabdrucks gegen `SECURITY.md`.
 
    **Nicht einspielen**, wenn:
-   - Der `grep -q` oben liefert einen Exit-Code ungleich `0` (kein
-     `VALIDSIG` mit dem dokumentierten Fingerabdruck) -- das ist das
-     massgebliche Kriterium
-   - Die Ausgabe von `git tag -v` enthaelt zusaetzlich `BAD signature`
-     oder `expired` oder aehnliches
+   - Der Befehl oben (inklusive `git verify-tag`s eigenem Exit-Code)
+     liefert einen Exit-Code ungleich `0` -- das ist das massgebliche
+     Kriterium, auch wenn `git tag -v` daneben eine scheinbar gute
+     Signatur zeigt
+   - Die Ausgabe von `git tag -v` enthaelt zusaetzlich `BAD signature`,
+     `expired` oder `revoked`/`zurueckgezogen`
    - Es gibt keine Signatur-Zeile ueberhaupt
 
    In jedem dieser Faelle: **nicht einspielen**, `technik@revalenz.de`

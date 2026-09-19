@@ -70,7 +70,7 @@ git commit -m "docs: Aenderungsprotokoll fuer $VERSION"
 git tag -s "$VERSION" -m "$MESSAGE"
 
 ERWARTETER_FINGERPRINT="5F6E6D907617F8991135D1847B1C6E1640801E3F"
-if ! git verify-tag --raw "$VERSION" 2>&1 | grep -q "VALIDSIG $ERWARTETER_FINGERPRINT"; then
+if ! git verify-tag --raw "$VERSION" 2>&1 | grep -q "^\[GNUPG:\] VALIDSIG $ERWARTETER_FINGERPRINT "; then
   echo "FEHLER: Tag $VERSION wurde NICHT mit dem veroeffentlichten Schluessel ($ERWARTETER_FINGERPRINT) signiert." >&2
   echo "Tatsaechlich signiert mit einem anderen/keinem passenden Schluessel -- Tag wird geloescht." >&2
   git tag -d "$VERSION"

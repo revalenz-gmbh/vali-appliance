@@ -43,18 +43,32 @@ Wert, sowie -- sobald verfuegbar -- gegen die unabhaengige
 Veroeffentlichung auf revalenz.de.
 
 Um bei jedem Update die Signatur zu pruefen, ist der Abgleich gegen den
-Fingerabdruck das eigentliche Pass/Fail-Kriterium, nicht das bloße Lesen
+Fingerabdruck das eigentliche Pass/Fail-Kriterium, nicht das blosse Lesen
 von Text in der Ausgabe:
 
 ```bash
-git verify-tag --raw <tag> 2>&1 | grep -q \
-  'VALIDSIG 5F6E6D907617F8991135D1847B1C6E1640801E3F'
+GPG_STATUS=$(git verify-tag --raw <tag> 2>&1) && \
+  printf '%s\n' "$GPG_STATUS" | grep -q \
+    '^\[GNUPG:\] VALIDSIG 5F6E6D907617F8991135D1847B1C6E1640801E3F '
 ```
 
-**Erwartetes Ergebnis:** Exit-Code `0` von diesem `grep -q` -- das heisst,
-die Zeile `VALIDSIG` mit genau diesem Fingerabdruck ist in der Ausgabe
-vorhanden. Nur dann ist der Tag tatsaechlich mit dem oben dokumentierten
-Schluessel signiert.
+**Erwartetes Ergebnis:** Exit-Code `0` von diesem Befehl -- das heisst,
+`git verify-tag` selbst ist erfolgreich durchgelaufen UND die Statuszeile
+`VALIDSIG` beginnt exakt mit diesem Fingerabdruck. Nur dann ist der Tag
+tatsaechlich mit dem oben dokumentierten Schluessel signiert.
+
+⚠️ **Zwei Stolperfallen, die genau hier lauern:**
+- Das Muster muss am Zeilenanfang verankert sein (`^\[GNUPG:\] VALIDSIG
+  ... `, mit Leerzeichen am Ende). Ein unverankertes `grep -q 'VALIDSIG
+  <fingerabdruck>'` liesse sich mit einem praeparierten Schluessel
+  austricksen, dessen UID selbst den Text `VALIDSIG <fingerabdruck>`
+  enthaelt -- das waere kein Nachweis, nur eine Zeichenkette in der
+  falschen Zeile.
+- `git verify-tag`s eigener Exit-Code muss mitgeprueft werden (`GPG_STATUS=$(...) &&`
+  davor), sonst wuerde ein Tag, das mit einem **zurueckgezogenen**
+  Schluessel signiert wurde, trotzdem als gueltig durchgehen -- `git
+  verify-tag` selbst schlaegt dabei fehl, aber ein reines `grep -q` auf die
+  Ausgabe wuerde das nicht bemerken.
 
 Zur menschlichen Gegenkontrolle kann zusaetzlich `git tag -v <tag>`
 angeschaut werden (z.B. `git tag -v v0.1.0`): die Ausgabe sollte eine
