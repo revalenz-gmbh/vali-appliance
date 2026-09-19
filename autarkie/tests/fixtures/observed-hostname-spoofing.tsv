@@ -1,0 +1,2 @@
+tcp	443	198.51.100.9	github.com.exfil.attacker.net
+tcp	443	198.51.100.10	stealgithub.commercial.evil.io
