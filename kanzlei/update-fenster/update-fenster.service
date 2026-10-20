@@ -1,0 +1,8 @@
+[Unit]
+Description=Update-Fenster (Proxy fuer Sicherheitsupdates, zeitlich begrenzt)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/tinyproxy -d -c /etc/tinyproxy/update-fenster.conf
+RuntimeMaxSec=7200
+Restart=no

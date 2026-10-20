@@ -13,6 +13,12 @@ cloud.buero.intern {
 	reverse_proxy nextcloud:80
 }
 
+office.buero.intern {
+	tls internal
+	import sicherheit
+	reverse_proxy collabora:9980
+}
+
 chat.buero.intern {
 	tls internal
 	import sicherheit

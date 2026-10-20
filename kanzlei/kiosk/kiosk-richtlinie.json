@@ -6,7 +6,8 @@
     "https://cloud.buero.intern",
     "https://vali.buero.intern",
     "https://chat.buero.intern",
-    "https://start.buero.intern"
+    "https://start.buero.intern",
+    "https://office.buero.intern"
   ],
   "HomepageLocation": "https://start.buero.intern/",
   "RestoreOnStartup": 4,

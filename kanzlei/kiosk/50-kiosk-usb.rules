@@ -1,0 +1,11 @@
+// Der Kiosk-Benutzer darf USB-Datentraeger ein- und aushaengen (nur er, nur udisks2).
+polkit.addRule(function(action, subject) {
+    if (subject.user == "kiosk" &&
+        (action.id == "org.freedesktop.udisks2.filesystem-mount" ||
+         action.id == "org.freedesktop.udisks2.filesystem-mount-system" ||
+         action.id == "org.freedesktop.udisks2.filesystem-unmount-others" ||
+         action.id == "org.freedesktop.udisks2.eject-media" ||
+         action.id == "org.freedesktop.udisks2.power-off-drive")) {
+        return polkit.Result.YES;
+    }
+});

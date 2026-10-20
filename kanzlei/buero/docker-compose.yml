@@ -15,7 +15,7 @@ services:
     networks:
       default:
         # Container erreichen die Namen direkt ueber Caddy (gleiches Zertifikat wie die Clients)
-        aliases: [vali.buero.intern, cloud.buero.intern, chat.buero.intern, start.buero.intern]
+        aliases: [vali.buero.intern, cloud.buero.intern, chat.buero.intern, start.buero.intern, office.buero.intern]
 
   nextcloud-db:
     image: postgres:16-alpine
@@ -59,6 +59,24 @@ services:
     ports:
       # interner Weg fuer das Vali-Backend (WebDAV), nicht im Buero-Netz
       - "10.77.0.2:8081:80"
+
+  # Office-Editor in der Nextcloud-Ansicht (Word-Dateien lesen und bearbeiten). Erreichbar nur ueber Caddy.
+  collabora:
+    image: collabora/code:26.04.5.1.1
+    container_name: collabora
+    restart: unless-stopped
+    depends_on: [caddy]
+    cap_add: [MKNOD, SYS_CHROOT, FOWNER]
+    mem_limit: 2g
+    environment:
+      # TLS macht Caddy; Collabora spricht intern unverschluesselt
+      server_name: office.buero.intern
+      aliasgroup1: https://cloud.buero.intern:443
+      dictionaries: de_DE en_US
+      extra_params: --o:ssl.enable=false --o:ssl.termination=true
+    volumes:
+      # Collabora liest seine Vertrauensliste aus SSL_CERT_FILE; es spricht nur mit der Nextcloud, daher genuegt die eigene CA
+      - ./ca/root.crt:/etc/ssl/certs/ca-certificates.crt:ro
 
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
