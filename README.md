@@ -42,3 +42,7 @@ Hinweiskanal.
 ## Sicherheit / Signaturpruefung
 
 Siehe `SECURITY.md`.
+
+## Lizenz
+
+Apache License 2.0, siehe `LICENSE`. Das Vali-Backend ist nicht Teil dieses Repos und steht nicht unter dieser Lizenz.
