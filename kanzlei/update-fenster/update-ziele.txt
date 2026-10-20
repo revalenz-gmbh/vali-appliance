@@ -1,0 +1,11 @@
+# Erlaubte Ziele im Update-Fenster (erweiterte regulaere Ausdruecke auf den Domainnamen).
+^([a-z0-9-]+\.)?archive\.ubuntu\.com$
+^security\.ubuntu\.com$
+^nvidia\.github\.io$
+^registry-1\.docker\.io$
+^auth\.docker\.io$
+^production\.cloudflare\.docker\.com$
+^ghcr\.io$
+^pkg-containers\.githubusercontent\.com$
+^quay\.io$
+^cdn[0-9]*\.quay\.io$

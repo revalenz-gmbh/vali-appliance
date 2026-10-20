@@ -18,6 +18,8 @@ kein erstes Release.
 
 ## Inhalt
 
+- `kanzlei/` -- Aufbau des Kanzlei-Arbeitsplatzes auf einem Rechner (Proxmox, Einmalanmeldung, Nextcloud, Schreibhilfe, Modellsteuerung, Kiosk) -- **ohne** das Vali-Backend. Siehe `kanzlei/README.md`.
+
 - `autarkie/` -- Default-Deny-Firewall + Nachweisskript, das den
   tatsaechlichen ausgehenden Netzwerkverkehr gegen eine dokumentierte
   Positivliste prueft. Siehe `autarkie/RUNBOOK.md`.
@@ -40,3 +42,7 @@ Hinweiskanal.
 ## Sicherheit / Signaturpruefung
 
 Siehe `SECURITY.md`.
+
+## Lizenz
+
+Apache License 2.0, siehe `LICENSE`. Das Vali-Backend ist nicht Teil dieses Repos und steht nicht unter dieser Lizenz.

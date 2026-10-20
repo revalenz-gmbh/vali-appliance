@@ -1,0 +1,2 @@
+# Die Modellsteuerung darf genau diesen einen Container stoppen und starten, sonst nichts.
+modellsteuerung ALL=(root) NOPASSWD: /usr/bin/docker stop ghost-transcriber, /usr/bin/docker start ghost-transcriber

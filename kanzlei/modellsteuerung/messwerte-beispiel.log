@@ -1,0 +1,1 @@
+{"median": {"whisper_entladen_s": 1.287839608000013, "gemma_laden_s": 13.08490774899974, "erstes_token_s": 0.3542098220000298, "tok_pro_s": 13.31503315176954, "gemma_entladen_s": 0.0004756710000037856, "whisper_starten_s": 6.305851211999652}, "ctx": 65536, "modell": "gemma4:31b"}

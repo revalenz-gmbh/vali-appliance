@@ -1,0 +1,78 @@
+# Eingang der Appliance: ein Zertifikat je Name aus der eigenen CA von Caddy.
+(sicherheit) {
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+cloud.buero.intern {
+	tls internal
+	import sicherheit
+	# OIDC-Erkennung: der Standardpfad zeigt auf die App "oidc"
+	rewrite /.well-known/openid-configuration /index.php/apps/oidc/openid-configuration
+	redir /.well-known/carddav /remote.php/dav 301
+	redir /.well-known/caldav /remote.php/dav 301
+	reverse_proxy nextcloud:80
+}
+
+office.buero.intern {
+	tls internal
+	import sicherheit
+	reverse_proxy collabora:9980
+}
+
+chat.buero.intern {
+	tls internal
+	import sicherheit
+	reverse_proxy open-webui:8080
+}
+
+vali.buero.intern {
+	tls internal
+	import sicherheit
+	route {
+		# jeder vom Client mitgeschickte Identitaets-Header wird verworfen
+		request_header -X-Authentik-Username
+		request_header -X-Authentik-Email
+		request_header -X-Authentik-Groups
+		request_header -X-Authentik-Token
+
+		# Das Vali-Frontend ruft bei abgelaufener Sitzung die Authentik-Pfade auf; sie werden auf oauth2-proxy umgelegt
+		redir /outpost.goauthentik.io/start /oauth2/start?{http.request.uri.query} 302
+		redir /outpost.goauthentik.io/sign_out /oauth2/sign_out?rd=/ 302
+
+		reverse_proxy /oauth2/* oauth2-proxy:4180 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-Uri {uri}
+		}
+		forward_auth oauth2-proxy:4180 {
+			uri /oauth2/auth
+			header_up X-Real-IP {remote_host}
+			@unauthorized status 401
+			handle_response @unauthorized {
+				redir * /oauth2/start?rd={scheme}://{host}{uri}
+			}
+			copy_headers {
+				X-Auth-Request-Preferred-Username>X-Authentik-Username
+			}
+		}
+		# Umschaltstatus der Modellsteuerung (nur lesen), vom Frontend fuer die Anzeige abgefragt
+		@modell {
+			path /modell/status
+			method GET
+		}
+		handle @modell {
+			rewrite * /status
+			reverse_proxy 10.77.0.3:8002
+		}
+		handle {
+			reverse_proxy 10.77.0.3:8001
+		}
+	}
+}
+
+start.buero.intern {
+	tls internal
+	import sicherheit
+	# Startseite mit den drei Zielen; rein statisch, keine Anmeldung noetig
+	root * /srv/start
+	file_server
+}

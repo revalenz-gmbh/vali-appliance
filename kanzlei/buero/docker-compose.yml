@@ -1,0 +1,149 @@
+# Dienste der VM "buero". Namensdienst (dnsmasq) laeuft als systemd-Dienst auf dem Gast, siehe dnsmasq/.
+services:
+  caddy:
+    image: caddy:2.8.4
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./start:/srv/start:ro
+      - ./caddy-data:/data
+      - ./caddy-config:/config
+    networks:
+      default:
+        # Container erreichen die Namen direkt ueber Caddy (gleiches Zertifikat wie die Clients)
+        aliases: [vali.buero.intern, cloud.buero.intern, chat.buero.intern, start.buero.intern, office.buero.intern]
+
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: nextcloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./nextcloud-db:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+
+  nextcloud:
+    image: nextcloud:33-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    depends_on: [nextcloud-db, redis]
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_HOST_PASSWORD: ${REDIS_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: "cloud.buero.intern 10.77.0.2:8081"
+      OVERWRITEPROTOCOL: https
+      OVERWRITEHOST: cloud.buero.intern
+      TRUSTED_PROXIES: 172.16.0.0/12
+      PHP_UPLOAD_LIMIT: 512M
+      PHP_MEMORY_LIMIT: 1024M
+    volumes:
+      - ./nextcloud-html:/var/www/html
+    ports:
+      # interner Weg fuer das Vali-Backend (WebDAV), nicht im Buero-Netz
+      - "10.77.0.2:8081:80"
+
+  # Office-Editor in der Nextcloud-Ansicht (Word-Dateien lesen und bearbeiten). Erreichbar nur ueber Caddy.
+  collabora:
+    image: collabora/code:26.04.5.1.1
+    container_name: collabora
+    restart: unless-stopped
+    depends_on: [caddy]
+    cap_add: [MKNOD, SYS_CHROOT, FOWNER]
+    mem_limit: 2g
+    environment:
+      # TLS macht Caddy; Collabora spricht intern unverschluesselt
+      server_name: office.buero.intern
+      aliasgroup1: https://cloud.buero.intern:443
+      dictionaries: de_DE en_US
+      extra_params: --o:ssl.enable=false --o:ssl.termination=true
+    volumes:
+      # Collabora liest seine Vertrauensliste aus SSL_CERT_FILE; es spricht nur mit der Nextcloud, daher genuegt die eigene CA
+      - ./ca/root.crt:/etc/ssl/certs/ca-certificates.crt:ro
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
+    container_name: oauth2-proxy
+    restart: unless-stopped
+    depends_on: [caddy]
+    command:
+      - --provider=oidc
+      - --oidc-issuer-url=https://cloud.buero.intern
+      - --provider-ca-file=/caddy-root.crt
+      - --client-id=${OAUTH_CLIENT_ID}
+      - --client-secret=${OAUTH_CLIENT_SECRET}
+      - --cookie-secret=${OAUTH_COOKIE_SECRET}
+      - --redirect-url=https://vali.buero.intern/oauth2/callback
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true
+      - --set-xauthrequest=true
+      - --email-domain=*
+      # Nextcloud-Konten haben nicht immer eine E-Mail; fuer die Sitzung genuegt der Benutzername
+      - --oidc-email-claim=preferred_username
+      - --cookie-secure=true
+      - --skip-provider-button=true
+      - --scope=openid profile email
+      - --code-challenge-method=S256
+    volumes:
+      - ./ca/root.crt:/caddy-root.crt:ro
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.11.4
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on: [caddy]
+    environment:
+      WEBUI_URL: https://chat.buero.intern
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      # ueber die Modellsteuerung, die die GPU zwischen Whisper und Sprachmodell umschaltet
+      OLLAMA_BASE_URL: http://10.77.0.3:8004
+      # Compose ist maßgeblich: gespeicherte Werte in der Open-WebUI-Datenbank (z. B. eine fruehere Ollama-Adresse) gelten nicht
+      ENABLE_PERSISTENT_CONFIG: "false"
+      DEFAULT_LOCALE: de
+      DEFAULT_MODELS: gemma4:31b
+      # alle angemeldeten Personen sehen alle Modelle (sonst nur Admins, solange keine Zugriffsrechte vergeben sind)
+      BYPASS_MODEL_ACCESS_CONTROL: "true"
+      ENABLE_OPENAI_API: "false"
+      # Anmeldung nur ueber Nextcloud
+      ENABLE_LOGIN_FORM: "false"
+      ENABLE_PASSWORD_AUTH: "false"
+      ENABLE_SIGNUP: "false"
+      ENABLE_OAUTH_SIGNUP: "true"
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+      DEFAULT_USER_ROLE: user
+      OAUTH_PROVIDER_NAME: Nextcloud
+      OAUTH_CLIENT_ID: ${WEBUI_OAUTH_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${WEBUI_OAUTH_CLIENT_SECRET}
+      OPENID_PROVIDER_URL: https://cloud.buero.intern/.well-known/openid-configuration
+      OAUTH_SCOPES: "openid profile email"
+      REQUESTS_CA_BUNDLE: /caddy-root.crt
+      SSL_CERT_FILE: /caddy-root.crt
+      # keine ausgehenden Verbindungen: Telemetrie, Updatepruefung, Websuche, Modell-Downloads
+      OFFLINE_MODE: "true"
+      ANONYMIZED_TELEMETRY: "false"
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ENABLE_VERSION_UPDATE_CHECK: "false"
+      ENABLE_WEB_SEARCH: "false"
+      RAG_EMBEDDING_ENGINE: ollama
+      RAG_EMBEDDING_MODEL: embeddinggemma
+    volumes:
+      - ./open-webui-data:/app/backend/data
+      - ./ca/root.crt:/caddy-root.crt:ro

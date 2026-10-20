@@ -1,0 +1,26 @@
+#!/bin/bash
+# Update-Fenster oeffnen/schliessen. Aufruf auf dem Proxmox-Host: update-fenster oeffnen [Minuten] | schliessen | status
+set -euo pipefail
+LOG=/var/log/update-fenster.log
+protokoll() { echo "$(date -Is) $*" >> "$LOG"; }
+case "${1:-status}" in
+  oeffnen)
+    MIN=${2:-30}
+    [[ "$MIN" =~ ^[0-9]+$ ]] && [ "$MIN" -ge 1 ] && [ "$MIN" -le 120 ] || { echo "Minuten: 1 bis 120" >&2; exit 2; }
+    systemctl stop update-fenster-ende.timer update-fenster 2>/dev/null || true
+    systemctl start update-fenster
+    # schliesst von selbst; die Obergrenze RuntimeMaxSec in der Unit gilt zusaetzlich
+    systemd-run --quiet --unit=update-fenster-ende --on-active=${MIN}m /bin/systemctl stop update-fenster
+    protokoll "geoeffnet fuer ${MIN} Minuten durch ${SUDO_USER:-$USER}"
+    echo "Update-Fenster offen bis $(date -d "+${MIN} min" '+%H:%M') Uhr (schliesst von selbst)." ;;
+  schliessen)
+    systemctl stop update-fenster-ende.timer 2>/dev/null || true
+    systemctl stop update-fenster 2>/dev/null || true
+    protokoll "geschlossen durch ${SUDO_USER:-$USER}"
+    echo "Update-Fenster geschlossen." ;;
+  status)
+    if systemctl is-active --quiet update-fenster; then
+      echo "OFFEN seit $(systemctl show update-fenster -p ActiveEnterTimestamp --value), schliesst: $(systemctl list-timers update-fenster-ende.timer --no-legend 2>/dev/null | awk '{print $1,$2,$3}')"
+    else echo "geschlossen"; fi ;;
+  *) echo "Aufruf: update-fenster oeffnen [Minuten] | schliessen | status" >&2; exit 2 ;;
+esac

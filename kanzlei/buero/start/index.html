@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanzlei-Arbeitsplatz</title>
+<style>
+  :root { --bg:#f4f6f8; --fg:#1b2733; --karte:#fff; --rand:#d5dde5; --akzent:#1d5fa8; --leise:#5b6b7a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141a21; --fg:#e8eef4; --karte:#1e2730; --rand:#34414e; --akzent:#6aa9ec; --leise:#9fb0c0; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         padding:32px 16px; background:var(--bg); color:var(--fg); font:18px/1.45 system-ui, sans-serif; }
+  h1 { margin:0 0 8px; font-size:2rem; }
+  p.unter { margin:0 0 32px; color:var(--leise); }
+  .raster { display:grid; gap:20px; width:100%; max-width:1000px; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); }
+  a.karte { display:block; padding:28px 24px; background:var(--karte); border:2px solid var(--rand); border-radius:14px;
+            color:inherit; text-decoration:none; }
+  a.karte:hover, a.karte:focus-visible { border-color:var(--akzent); outline:none; }
+  a.karte h2 { margin:0 0 8px; font-size:1.4rem; color:var(--akzent); }
+  a.karte p { margin:0; color:var(--leise); }
+  footer { margin-top:32px; color:var(--leise); font-size:.9rem; }
+</style>
+</head>
+<body>
+  <h1>Kanzlei-Arbeitsplatz</h1>
+  <p class="unter">Wohin möchten Sie?</p>
+  <div class="raster">
+    <a class="karte" href="https://vali.buero.intern/">
+      <h2>Diktat und Protokolle</h2>
+      <p>Aufnahme hochladen oder aufnehmen, Protokolle ansehen</p>
+    </a>
+    <a class="karte" href="https://cloud.buero.intern/">
+      <h2>Dokumente</h2>
+      <p>Protokolle öffnen und bearbeiten, Ablage</p>
+    </a>
+    <a class="karte" href="https://chat.buero.intern/">
+      <h2>Schreibhilfe</h2>
+      <p>Nachrichten an Mandanten formulieren lassen</p>
+    </a>
+  </div>
+  <footer>Zurück zu dieser Seite: Alt + Pos1</footer>
+</body>
+</html>

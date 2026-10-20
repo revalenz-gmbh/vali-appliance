@@ -1,0 +1,10 @@
+[Unit]
+Description=Buero-Adresse fuer dnsmasq regelmaessig pruefen
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=15s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
