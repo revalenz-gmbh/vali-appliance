@@ -1,0 +1,23 @@
+[Unit]
+Description=Kiosk-Browser an der Appliance (Nextcloud, Vali, Open WebUI)
+After=systemd-user-sessions.service network-online.target
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+
+[Service]
+User=kiosk
+PAMName=login
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=XKB_DEFAULT_LAYOUT=de
+ExecStart=/usr/bin/cage -s -- /usr/local/bin/kiosk-start
+KillMode=mixed
+TimeoutStopSec=10
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

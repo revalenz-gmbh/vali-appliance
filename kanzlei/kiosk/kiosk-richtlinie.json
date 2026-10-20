@@ -1,0 +1,26 @@
+{
+  "URLBlocklist": [
+    "*"
+  ],
+  "URLAllowlist": [
+    "https://cloud.buero.intern",
+    "https://vali.buero.intern",
+    "https://chat.buero.intern",
+    "https://start.buero.intern"
+  ],
+  "HomepageLocation": "https://start.buero.intern/",
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": [
+    "https://start.buero.intern/"
+  ],
+  "PasswordManagerEnabled": false,
+  "TranslateEnabled": false,
+  "DeveloperToolsAvailability": 2,
+  "IncognitoModeAvailability": 1,
+  "BrowserSignin": 0,
+  "MetricsReportingEnabled": false,
+  "ExternalProtocolDialogShowAlwaysOpenCheckbox": false,
+  "HomepageIsNewTabPage": false,
+  "NewTabPageLocation": "https://start.buero.intern/",
+  "ShowHomeButton": true
+}

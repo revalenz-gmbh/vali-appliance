@@ -1,0 +1,6 @@
+[Unit]
+Description=dnsmasq an die aktuelle Buero-Adresse anpassen
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dnsmasq-buero-start.sh --nachziehen

@@ -1,0 +1,110 @@
+# Dienste der VM "vali-gpu": Vali-Backend, Rechteverwaltung, Whisper. Ollama laeuft als Dienst auf dem Gast.
+# Alle veroeffentlichten Ports nur an der internen Adresse 10.77.0.3 (vmbr1).
+services:
+  openfga-postgres:
+    image: postgres:15-alpine
+    container_name: openfga-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openfga
+      POSTGRES_PASSWORD: ${OPENFGA_DB_PASSWORD}
+      POSTGRES_DB: openfga
+    volumes:
+      - ./openfga-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openfga"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  openfga-migrate:
+    image: openfga/openfga@sha256:38857bdc425316ebe6dabd1cde52e05c48e6e8bff781713b7c36da8d5ed68205  # v1.14.2
+    container_name: openfga-migrate
+    depends_on:
+      openfga-postgres:
+        condition: service_healthy
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga:${OPENFGA_DB_PASSWORD}@openfga-postgres:5432/openfga?sslmode=disable
+    command: migrate
+
+  openfga:
+    image: openfga/openfga@sha256:38857bdc425316ebe6dabd1cde52e05c48e6e8bff781713b7c36da8d5ed68205  # v1.14.2
+    container_name: openfga
+    restart: unless-stopped
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga:${OPENFGA_DB_PASSWORD}@openfga-postgres:5432/openfga?sslmode=disable
+      OPENFGA_LOG_LEVEL: info
+      OPENFGA_PLAYGROUND_ENABLED: "false"
+    command: run
+    ports:
+      # nur fuer die Einrichtung auf dem Gast selbst
+      - "127.0.0.1:8080:8080"
+
+  ghost-transcriber:
+    image: ghost-transcriber:latest
+    container_name: ghost-transcriber
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+      - HF_DATASETS_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - OTEL_SDK_DISABLED=true
+      - OLLAMA_URL=http://10.77.0.3:11434
+      - OLLAMA_BASE_URL=http://10.77.0.3:11434
+      - WHISPER_MODEL=large-v3
+    ports:
+      # nur lokal: Auftraege laufen ueber die Modellsteuerung (Port 8003)
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./whisper-static:/app/static
+      - /home/vali/.cache/huggingface:/root/.cache/huggingface
+      - /home/vali/.cache/torch:/root/.cache/torch
+
+  nexus-api:
+    image: ${VALI_BACKEND_IMAGE:?Abbild des Vali-Backends angeben}
+    container_name: nexus-api
+    restart: unless-stopped
+    depends_on: [openfga]
+    ports:
+      - "10.77.0.3:8001:8001"
+    environment:
+      DEBUG: "false"
+      LOG_LEVEL: "INFO"
+      STATIC_PATH: "/app/static"
+      NEXUS_DB_PATH: "/opt/nexus/db/nexus.db"
+      NEXUS_DEV_MODE: "false"
+      OPENFGA_URL: "http://openfga:8080"
+      OPENFGA_STORE_ID: ${OPENFGA_STORE_ID}
+      OPENFGA_MODEL_ID: ${OPENFGA_MODEL_ID}
+      TRANSCRIBER_URL: "http://host.docker.internal:8003"
+      TRANSCRIBER_TIMEOUT: "300"
+      NEXTCLOUD_ENABLED: "true"
+      NEXTCLOUD_INTERNAL_URL: "http://10.77.0.2:8081"
+      NEXTCLOUD_EXTERNAL_URL: "https://cloud.buero.intern"
+      INBOX_WATCH_ENABLED: "true"
+      INBOX_POLL_SECONDS: "60"
+      NEXUS_SECRET_KEY: ${NEXUS_SECRET_KEY}
+      VALI_INTERNAL_SECRET: ${VALI_INTERNAL_SECRET}
+      TALK_BOT_SECRET: ${TALK_BOT_SECRET}
+      # Pilot: ohne Talk-Bot, Dateiindex und Bildanalyse
+      TALK_BOT_ENABLED: "false"
+      TALK_IMPORT_ENABLED: "false"
+      TALK_POST_BACK_ENABLED: "false"
+      TALK_FRAME_VISION_ENABLED: "false"
+      FILE_INDEX_ENABLED: "false"
+      # ueber die Modellsteuerung (Umschalten der GPU zwischen Whisper und Sprachmodell)
+      OLLAMA_BASE_URL: "http://host.docker.internal:8004"
+      OLLAMA_TIMEOUT: "600"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nexus-db:/opt/nexus/db
+      - ./src/nexus/static:/app/static:ro
